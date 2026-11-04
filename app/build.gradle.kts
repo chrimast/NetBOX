@@ -36,8 +36,20 @@ android {
         applicationId = ProjectConfig.PACKAGE_NAME
         minSdk = ProjectConfig.MIN_SDK
         targetSdk = ProjectConfig.TARGET_SDK
-        versionCode = getGitVersionCode()
+        versionCode = ProjectConfig.VERSION_CODE
         versionName = ProjectConfig.VERSION_NAME
+    }
+
+    val releaseStoreFile = System.getenv("NETBOX_STORE_FILE")?.takeIf { it.isNotBlank() }?.let { file(it) }
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = releaseStoreFile
+                storePassword = System.getenv("NETBOX_STORE_PASSWORD").orEmpty()
+                keyAlias = System.getenv("NETBOX_KEY_ALIAS").orEmpty()
+                keyPassword = System.getenv("NETBOX_KEY_PASSWORD").orEmpty()
+            }
+        }
     }
 
     androidResources {
@@ -74,6 +86,9 @@ android {
             isPseudoLocalesEnabled = false
             isMinifyEnabled = true
             isShrinkResources = true
+            if (releaseStoreFile != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -170,7 +185,7 @@ val generateProjectInfo = tasks.register<GenerateProjectInfoTask>("generateProje
     packageName.set("app")
     projectName.set(ProjectConfig.PROJECT_NAME)
     versionName.set(ProjectConfig.VERSION_NAME)
-    versionCode.set(getGitVersionCode())
+    versionCode.set(ProjectConfig.VERSION_CODE)
     androidLibBoxLiteVersion.set(ProjectConfig.ANDROID_LIB_BOX_LITE_VERSION)
     hevSocks5TunnelVersion.set(ProjectConfig.HEV_SOCKS5_TUNNEL_VERSION)
     outputDirectory.set(generatedSrcDir.map { it.dir("kotlin") })
