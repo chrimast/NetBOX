@@ -19,4 +19,5 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 app/libs/*.aar
+.agents/
 .worktrees/

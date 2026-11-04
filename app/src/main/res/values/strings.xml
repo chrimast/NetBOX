@@ -3,7 +3,7 @@
          Keep section and resource order aligned across translations and sibling apps. -->
 
     <!-- Common -->
-    <string name="app_name">AsteriskBOX</string>
+    <string name="app_name">NetBOX</string>
     <string name="code_editor_format_content_changed">Content changed. Format again.</string>
     <string name="code_editor_format_failed">Formatting failed. Check the syntax.</string>
     <string name="code_editor_format_javascript">Format JavaScript</string>
@@ -535,6 +535,7 @@
     <string name="outbound_field_ech_config">ECH config</string>
     <string name="outbound_field_ech_config_path">ECH config path</string>
     <string name="outbound_field_ech_query_server_name">ECH query server name</string>
+    <string name="outbound_field_encryption">Encryption</string>
     <string name="outbound_field_encryption_method">Encryption method</string>
     <string name="outbound_field_extra_headers">Extra headers</string>
     <string name="outbound_field_fallback_delay">Fallback delay</string>
@@ -596,6 +597,7 @@
     <string name="outbound_field_quic_session_receive_window">QUIC session receive window</string>
     <string name="outbound_field_reality">Reality</string>
     <string name="outbound_field_reality_public_key">Reality public key</string>
+    <string name="outbound_field_reality_mldsa65_verify">Reality ML-DSA-65 verify</string>
     <string name="outbound_field_reality_short_id">Reality short ID</string>
     <string name="outbound_field_request_path">Request path</string>
     <string name="outbound_field_reuse_address">Reuse address</string>
@@ -619,6 +621,8 @@
     <string name="outbound_field_tls_record_fragmentation">TLS record fragmentation</string>
     <string name="outbound_field_traffic_shaping_mode">Traffic shaping mode</string>
     <string name="outbound_field_transport">Transport</string>
+    <string name="outbound_field_xhttp_mode">XHTTP mode</string>
+    <string name="outbound_field_xhttp_uplink_method">XHTTP uplink method</string>
     <string name="outbound_field_udp_fragmentation">UDP fragmentation</string>
     <string name="outbound_field_udp_over_stream">UDP over stream</string>
     <string name="outbound_field_udp_over_tcp">UDP over TCP</string>
@@ -1341,7 +1345,7 @@
     <string name="settings_traffic_stats_notification_summary">Show current speed and total traffic in notifications and the status bar</string>
 
     <!-- Quick settings tile -->
-    <string name="quick_settings_tile_label">AsteriskBOX</string>
+    <string name="quick_settings_tile_label">NetBOX</string>
     <string name="quick_settings_tile_processing">Processing…</string>
     <string name="quick_settings_tile_running">Proxy running</string>
     <string name="quick_settings_tile_stopped">Proxy stopped</string>

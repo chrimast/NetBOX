@@ -343,24 +343,43 @@ internal object OutboundEditorRegistry {
                 OutboundFieldCondition("tls.reality.enabled"),
             ),
         ),
+        field(
+            "tls.reality.mldsa65_verify",
+            "Reality ML-DSA-65 verify",
+            conditions = listOf(
+                OutboundFieldCondition("tls.enabled"),
+                OutboundFieldCondition("tls.reality.enabled"),
+            ),
+        ),
     )
 
     private fun transportFields() = listOf(
-        select("transport.type", "Transport", listOf("", "http", "ws", "quic", "grpc", "httpupgrade")),
+        select("transport.type", "Transport", listOf("", "http", "ws", "quic", "grpc", "httpupgrade", "xhttp")),
         field(
             "transport.host",
             "Host",
-            conditions = listOf(OutboundFieldCondition("transport.type", setOf("http", "httpupgrade"))),
+            conditions = listOf(OutboundFieldCondition("transport.type", setOf("http", "httpupgrade", "xhttp"))),
         ),
         field(
             "transport.path",
             "Path",
-            conditions = listOf(OutboundFieldCondition("transport.type", setOf("http", "ws", "httpupgrade"))),
+            conditions = listOf(OutboundFieldCondition("transport.type", setOf("http", "ws", "httpupgrade", "xhttp"))),
         ),
         field(
             "transport.method",
             "HTTP method",
             conditions = listOf(OutboundFieldCondition("transport.type", setOf("http"))),
+        ),
+        select(
+            "transport.mode",
+            "XHTTP mode",
+            listOf("", "auto", "packet-up", "stream-up", "stream-one"),
+            conditions = listOf(OutboundFieldCondition("transport.type", setOf("xhttp"))),
+        ),
+        field(
+            "transport.uplink_http_method",
+            "XHTTP uplink method",
+            conditions = listOf(OutboundFieldCondition("transport.type", setOf("xhttp"))),
         ),
         field(
             "transport.headers",
@@ -643,6 +662,7 @@ internal fun outboundFieldLabelResource(label: String): Int = when (label) {
     "ECH config" -> R.string.outbound_field_ech_config
     "ECH config path" -> R.string.outbound_field_ech_config_path
     "ECH query server name" -> R.string.outbound_field_ech_query_server_name
+    "Encryption" -> R.string.outbound_field_encryption
     "Encryption method" -> R.string.outbound_field_encryption_method
     "Extra headers" -> R.string.outbound_field_extra_headers
     "Fallback delay" -> R.string.outbound_field_fallback_delay
@@ -704,6 +724,7 @@ internal fun outboundFieldLabelResource(label: String): Int = when (label) {
     "QUIC session receive window" -> R.string.outbound_field_quic_session_receive_window
     "Reality" -> R.string.outbound_field_reality
     "Reality public key" -> R.string.outbound_field_reality_public_key
+    "Reality ML-DSA-65 verify" -> R.string.outbound_field_reality_mldsa65_verify
     "Reality short ID" -> R.string.outbound_field_reality_short_id
     "Request path" -> R.string.outbound_field_request_path
     "Reuse address" -> R.string.outbound_field_reuse_address
@@ -730,6 +751,8 @@ internal fun outboundFieldLabelResource(label: String): Int = when (label) {
     "UDP fragmentation" -> R.string.outbound_field_udp_fragmentation
     "UDP over stream" -> R.string.outbound_field_udp_over_stream
     "UDP over TCP" -> R.string.outbound_field_udp_over_tcp
+    "XHTTP mode" -> R.string.outbound_field_xhttp_mode
+    "XHTTP uplink method" -> R.string.outbound_field_xhttp_uplink_method
     "UDP over TCP version" -> R.string.outbound_field_udp_over_tcp_version
     "UDP relay mode" -> R.string.outbound_field_udp_relay_mode
     "Upload bandwidth" -> R.string.outbound_field_upload_bandwidth

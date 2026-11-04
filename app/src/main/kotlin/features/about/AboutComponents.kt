@@ -34,7 +34,7 @@ import ui.components.AsteriskListRow
 import ui.components.AsteriskSection
 import ui.theme.AsteriskShapeTokens
 
-private const val ProjectSourceUri = "https://github.com/Asterisk4Magisk/AsteriskBOX"
+private const val ProjectSourceUri = "https://github.com/chrimast/NetBOX"
 private const val TelegramChannelUri = "https://t.me/Asterisk4Magisk"
 private const val AboutIconForegroundScale = 1.25f
 

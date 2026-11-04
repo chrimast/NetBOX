@@ -26,6 +26,7 @@ internal fun trojanOutboundFields() = listOf(
 
 internal fun vlessOutboundFields() = listOf(
     outboundField("uuid", "UUID", required = true),
+    outboundField("encryption", "Encryption"),
     outboundSelect("flow", "Flow", listOf("", "xtls-rprx-vision")),
     outboundSelect("network", "Network", listOf("", "tcp", "udp")),
     outboundSelect("packet_encoding", "Packet encoding", listOf("", "packetaddr", "xudp")),

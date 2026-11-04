@@ -1,6 +1,8 @@
 [English](README.md) | 简体中文
 
-# AsteriskBOX
+# NetBOX
+
+[AsteriskBOX](https://github.com/Asterisk4Magisk/AsteriskBOX) 的衍生：libbox 叠了 NetSBX 风格的 xhttp（Reality / VLESS 真实 encryption / Vision / 可选 pqv）。包名仍是 `org.asterisk.zcc.abox`，装之前先卸官方 AsteriskBOX。
 
 Android sing-box GUI 客户端。
 

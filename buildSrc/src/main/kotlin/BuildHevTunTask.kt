@@ -79,6 +79,7 @@ abstract class BuildHevTunTask : DefaultTask() {
                 "APP_ABI=$abi",
                 "APP_MODULES=${artifact.moduleName}",
                 "APP_PLATFORM=android-${minSdk.get()}",
+                "APP_ALLOW_MISSING_DEPS=true",
                 "NDK_LIBS_OUT=${ndkLibsOutDir.absolutePath}",
                 "NDK_OUT=${temporaryDir.resolve("obj").absolutePath}",
                 "APP_CFLAGS=-O3 -DPKGNAME=engine/vpn/hevtun -DCLSNAME=HevTunNative",

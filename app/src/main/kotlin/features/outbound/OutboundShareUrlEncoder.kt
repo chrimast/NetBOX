@@ -158,7 +158,7 @@ internal fun JsonObject.readShareTls(required: Boolean): OutboundShareTls {
 
     var realityEnabled = false
     tls.objectValue("reality")?.let { reality ->
-        reality.requireOnlyNestedShareFields("enabled", "public_key", "short_id")
+        reality.requireOnlyNestedShareFields("enabled", "public_key", "short_id", "mldsa65_verify")
         realityEnabled = reality.booleanValue("enabled")
         require(realityEnabled || !reality.hasMeaningfulFieldBesides("enabled")) {
             "Disabled REALITY contains connection options"
@@ -169,6 +169,9 @@ internal fun JsonObject.readShareTls(required: Boolean): OutboundShareTls {
             parameters += "pbk" to publicKey
             reality.stringValue("short_id").takeIf(String::isNotBlank)?.let {
                 parameters += "sid" to it
+            }
+            reality.stringValue("mldsa65_verify").takeIf(String::isNotBlank)?.let {
+                parameters += "pqv" to it
             }
         }
     }

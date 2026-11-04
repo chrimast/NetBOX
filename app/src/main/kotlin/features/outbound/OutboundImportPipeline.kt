@@ -50,8 +50,21 @@ private fun canonicalV2RayTransport(transport: String): String? =
         "quic" -> "quic"
         "grpc" -> "grpc"
         "httpupgrade", "http-upgrade", "http_upgrade" -> "httpupgrade"
+        "xhttp", "splithttp" -> "xhttp"
         else -> null
     }
+
+private fun isRealVlessEncryption(value: String): Boolean {
+    val normalized = value.trim()
+    return normalized.isNotEmpty() &&
+        !normalized.equals("none", ignoreCase = true) &&
+        normalized.startsWith("mlkem768x25519plus", ignoreCase = true)
+}
+
+private fun vlessFlowForEncryption(encryption: String, flow: String): String {
+    val normalizedFlow = flow.trim()
+    return if (isRealVlessEncryption(encryption)) normalizedFlow else ""
+}
 
 private fun canonicalMihomoOutboundType(sourceType: String): String =
     when (sourceType.lowercase()) {
@@ -333,7 +346,8 @@ internal object MihomoYamlOutboundParser {
         val vlessEncryption = string("encryption")
         if (type == "vless" &&
             vlessEncryption.isNotBlank() &&
-            !vlessEncryption.equals("none", ignoreCase = true)
+            !vlessEncryption.equals("none", ignoreCase = true) &&
+            !isRealVlessEncryption(vlessEncryption)
         ) return null
         if (type == "trojan" && map("ss-opts").bool("enabled")) return null
         if (type == "tuic" && string("token").isNotBlank()) return null
@@ -496,7 +510,8 @@ internal object MihomoYamlOutboundParser {
                 }
                 "vless" -> {
                     putNotBlank("uuid", string("uuid"))
-                    putNotBlank("flow", string("flow"))
+                    putNotBlank("encryption", string("encryption"))
+                    putNotBlank("flow", vlessFlowForEncryption(string("encryption"), string("flow")))
                     putNotBlank("packet_encoding", string("packet-encoding"))
                 }
                 "shadowtls" -> {
@@ -668,6 +683,14 @@ internal object MihomoYamlOutboundParser {
                     put("enabled", true)
                     putNotBlank("public_key", reality.string("public-key"))
                     putNotBlank("short_id", reality.string("short-id"))
+                    putNotBlank(
+                        "mldsa65_verify",
+                        reality.string("mldsa65-verify").ifBlank {
+                            reality.string("mldsa65_verify").ifBlank {
+                                proxy.string("pqv")
+                            }
+                        },
+                    )
                 })
             }
             if (ech.isNotEmpty() && (ech.bool("enable") || ech.stringList("config").isNotEmpty())) {
@@ -732,7 +755,7 @@ internal object MihomoYamlOutboundParser {
         } else {
             sourceType
         }
-        if (normalizedType !in setOf("http", "ws", "quic", "grpc", "httpupgrade")) return null
+        if (normalizedType !in setOf("http", "ws", "quic", "grpc", "httpupgrade", "xhttp")) return null
         return buildJsonObject {
             put("type", normalizedType)
             when (normalizedType) {
@@ -776,6 +799,23 @@ internal object MihomoYamlOutboundParser {
                     )
                     putNotBlank("path", options.string("path"))
                     options.headers(excludedNames = setOf("host"))?.let { put("headers", it) }
+                }
+                "xhttp" -> {
+                    putNotBlank(
+                        "host",
+                        options.stringList("host").firstOrNull()
+                            ?: options.string("host").ifBlank {
+                                options.headerValues("Host").firstOrNull().orEmpty()
+                            },
+                    )
+                    putNotBlank("path", options.string("path").ifBlank { proxy.string("path") })
+                    putNotBlank("mode", options.string("mode").ifBlank { proxy.string("mode") })
+                    putNotBlank(
+                        "uplink_http_method",
+                        options.string("uplink-http-method").ifBlank {
+                            options.string("uplink_http_method")
+                        },
+                    )
                 }
                 "quic" -> Unit
             }
@@ -960,7 +1000,7 @@ private object ProxyUrlOutboundParser {
                 .any { key -> query.first(key).isNotBlank() }
         ) return null
         if (
-            listOf("pcs", "pqv", "fm")
+            listOf("pcs", "fm")
                 .any { key -> query.first(key).isNotBlank() }
         ) return null
         if (query.first("pinSHA256").isNotBlank() && type != "hysteria2") return null
@@ -1009,7 +1049,8 @@ private object ProxyUrlOutboundParser {
         val vlessEncryption = query.first("encryption")
         if (type == "vless" &&
             vlessEncryption.isNotBlank() &&
-            !vlessEncryption.equals("none", ignoreCase = true)
+            !vlessEncryption.equals("none", ignoreCase = true) &&
+            !isRealVlessEncryption(vlessEncryption)
         ) return null
         if (type == "hysteria2" &&
             query.first("obfs").let { obfs ->
@@ -1119,7 +1160,11 @@ private object ProxyUrlOutboundParser {
                 }
                 "vless" -> {
                     putNotBlank("uuid", credentials.first)
-                    putNotBlank("flow", query.first("flow"))
+                    putNotBlank("encryption", query.first("encryption"))
+                    putNotBlank(
+                        "flow",
+                        vlessFlowForEncryption(query.first("encryption"), query.first("flow")),
+                    )
                     putNotBlank("packet_encoding", query.first("packetEncoding", "packet_encoding"))
                 }
                 "shadowtls" -> {
@@ -1393,6 +1438,10 @@ private object ProxyUrlOutboundParser {
                     put("enabled", true)
                     put("public_key", realityPublicKey)
                     putNotBlank("short_id", realityShortId)
+                    putNotBlank(
+                        "mldsa65_verify",
+                        query.first("pqv", "mldsa65Verify", "mldsa65_verify"),
+                    )
                 })
             }
             query.values("ech").takeIf(List<String>::isNotEmpty)?.let { configs ->
@@ -1511,6 +1560,15 @@ private object ProxyUrlOutboundParser {
                 "httpupgrade" -> {
                     putNotBlank("host", query.first("host"))
                     putNotBlank("path", query.first("path"))
+                }
+                "xhttp" -> {
+                    putNotBlank("host", query.first("host"))
+                    putNotBlank("path", query.first("path"))
+                    putNotBlank("mode", query.first("mode"))
+                    putNotBlank(
+                        "uplink_http_method",
+                        query.first("uplink-http-method", "uplink_http_method", "uplinkHTTPMethod"),
+                    )
                 }
                 "quic" -> Unit
             }

@@ -10,7 +10,7 @@ import engine.root.runtime.model.RootRuntimeOwner
 internal fun RootRuntimeOwner.productName(): String = when (this) {
     RootRuntimeOwner.AsteriskNg -> "AsteriskNG"
     RootRuntimeOwner.AsteriskMeta -> "AsteriskMETA"
-    RootRuntimeOwner.AsteriskBox -> "AsteriskBOX"
+    RootRuntimeOwner.AsteriskBox -> "NetBOX"
 }
 
 internal fun Throwable.rootOperationTipMessageOrNull(

@@ -58,8 +58,8 @@ android {
         abi {
             isEnable = !isBuildingAppBundle
             reset()
-            include(*ProjectConfig.SUPPORTED_ANDROID_ABIS.toTypedArray())
-            isUniversalApk = !isBuildingAppBundle
+            include("arm64-v8a")
+            isUniversalApk = false
         }
     }
 
@@ -137,8 +137,14 @@ dependencies {
     implementation(dependencies.project(":bpfmatcher"))
     implementation(dependencies.project(":bpf2socks"))
     implementation(dependencies.project(":hevtun"))
-    //noinspection UseTomlInstead
-    implementation("com.github.asterisk4magisk:libbox:${ProjectConfig.ANDROID_LIB_BOX_LITE_VERSION}@aar")
+    // Local overlay AAR (gitignored) wins over the published pin.
+    val localLibbox = layout.projectDirectory.file("libs/libbox.aar").asFile
+    if (localLibbox.isFile) {
+        implementation(files(localLibbox))
+    } else {
+        //noinspection UseTomlInstead
+        implementation("com.github.asterisk4magisk:libbox:${ProjectConfig.ANDROID_LIB_BOX_LITE_VERSION}@aar")
+    }
     implementation(libs.ktor.http)
     implementation(libs.kage)
     implementation(libs.kotlinx.serialization.json)
@@ -152,6 +158,7 @@ dependencies {
     }
     implementation(libs.zxing.android.embedded)
     ksp(libs.androidx.room.compiler)
+    testImplementation(libs.junit)
 }
 
 ksp {

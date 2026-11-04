@@ -10,7 +10,7 @@ import org.gradle.api.tasks.TaskAction
 
 object ProjectConfig {
     const val JVM_VERSION = 26
-    const val PROJECT_NAME = "AsteriskBOX"
+    const val PROJECT_NAME = "NetBOX"
     const val VERSION_NAME = "1.1.25-dev"
     const val PACKAGE_NAME = "org.asterisk.zcc.abox"
     const val ASTERISKD_VERSION = "v2.3.0"

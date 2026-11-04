@@ -1,6 +1,8 @@
 English | [简体中文](README_zh_CN.md)
 
-# AsteriskBOX
+# NetBOX
+
+Fork of [AsteriskBOX](https://github.com/Asterisk4Magisk/AsteriskBOX) with a NetSBX-style xhttp overlay on libbox (Reality, VLESS encryption, Vision, optional pqv). Application ID remains `org.asterisk.zcc.abox`; uninstall official AsteriskBOX before installing this APK.
 
 Android sing-box GUI client.
 

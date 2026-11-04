@@ -29,6 +29,7 @@ internal fun encodeV2RayOutboundShareUrl(
 private fun JsonObject.encodeVlessShareUrl(remarks: String): String {
     requireOnlyShareFields(
         "uuid",
+        "encryption",
         "flow",
         "network",
         "packet_encoding",
@@ -43,7 +44,7 @@ private fun JsonObject.encodeVlessShareUrl(remarks: String): String {
     val transport = readV2RayShareTransport()
     val tls = readShareTls(required = false)
     val parameters = buildList {
-        add("encryption" to "none")
+        add("encryption" to stringValue("encryption").ifBlank { "none" })
         stringValue("flow").takeIf(String::isNotBlank)?.let { add("flow" to it) }
         stringValue("packet_encoding").takeIf(String::isNotBlank)?.let {
             add("packetEncoding" to it)
@@ -259,6 +260,8 @@ private fun JsonObject.readV2RayShareTransport(): V2RayShareTransport {
         "idle_timeout",
         "ping_timeout",
         "permit_without_stream",
+        "mode",
+        "uplink_http_method",
     )
     val type = transport.stringValue("type").lowercase()
     if (type.isBlank() || type in setOf("tcp", "raw")) {
@@ -335,6 +338,25 @@ private fun JsonObject.readV2RayShareTransport(): V2RayShareTransport {
                     add("type" to "httpupgrade")
                     host.takeIf(String::isNotBlank)?.let { add("host" to it) }
                     path.takeIf(String::isNotBlank)?.let { add("path" to it) }
+                },
+                legacyHost = host,
+                legacyPath = path,
+            )
+        }
+        "xhttp" -> {
+            requireTransportFieldsEmpty(transport, "method", "headers", "max_early_data", "early_data_header_name", "service_name", "idle_timeout", "ping_timeout", "permit_without_stream")
+            val host = transport.stringValue("host")
+            val path = transport.stringValue("path")
+            val mode = transport.stringValue("mode")
+            val uplink = transport.stringValue("uplink_http_method")
+            V2RayShareTransport(
+                type = "xhttp",
+                parameters = buildList {
+                    add("type" to "xhttp")
+                    host.takeIf(String::isNotBlank)?.let { add("host" to it) }
+                    path.takeIf(String::isNotBlank)?.let { add("path" to it) }
+                    mode.takeIf(String::isNotBlank)?.let { add("mode" to it) }
+                    uplink.takeIf(String::isNotBlank)?.let { add("uplink-http-method" to it) }
                 },
                 legacyHost = host,
                 legacyPath = path,

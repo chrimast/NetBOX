@@ -3,7 +3,7 @@
          Keep section and resource order aligned across translations and sibling apps. -->
 
     <!-- Common -->
-    <string name="app_name">AsteriskBOX</string>
+    <string name="app_name">NetBOX</string>
     <string name="code_editor_format_content_changed">内容已修改，请重新格式化</string>
     <string name="code_editor_format_failed">格式化失败，请检查语法</string>
     <string name="code_editor_format_javascript">格式化 JavaScript</string>
@@ -527,6 +527,7 @@
     <string name="outbound_field_ech_config">ECH 配置</string>
     <string name="outbound_field_ech_config_path">ECH 配置路径</string>
     <string name="outbound_field_ech_query_server_name">ECH 查询服务器名称</string>
+    <string name="outbound_field_encryption">加密</string>
     <string name="outbound_field_encryption_method">加密方法</string>
     <string name="outbound_field_extra_headers">额外请求头</string>
     <string name="outbound_field_fallback_delay">回退延迟</string>
@@ -588,6 +589,7 @@
     <string name="outbound_field_quic_session_receive_window">QUIC 会话接收窗口</string>
     <string name="outbound_field_reality">启用 Reality</string>
     <string name="outbound_field_reality_public_key">Reality 公钥</string>
+    <string name="outbound_field_reality_mldsa65_verify">Reality ML-DSA-65 验签</string>
     <string name="outbound_field_reality_short_id">Reality Short ID</string>
     <string name="outbound_field_request_path">请求路径</string>
     <string name="outbound_field_reuse_address">复用地址</string>
@@ -611,6 +613,8 @@
     <string name="outbound_field_tls_record_fragmentation">TLS 记录分片</string>
     <string name="outbound_field_traffic_shaping_mode">流量整形模式</string>
     <string name="outbound_field_transport">传输类型</string>
+    <string name="outbound_field_xhttp_mode">XHTTP 模式</string>
+    <string name="outbound_field_xhttp_uplink_method">XHTTP 上行方法</string>
     <string name="outbound_field_udp_fragmentation">UDP 分片</string>
     <string name="outbound_field_udp_over_stream">UDP over Stream</string>
     <string name="outbound_field_udp_over_tcp">UDP over TCP</string>
@@ -1324,7 +1328,7 @@
     <string name="settings_traffic_stats_notification_summary">在通知和状态栏中显示当前速度和累计流量</string>
 
     <!-- Quick settings tile -->
-    <string name="quick_settings_tile_label">AsteriskBOX</string>
+    <string name="quick_settings_tile_label">NetBOX</string>
     <string name="quick_settings_tile_processing">正在处理…</string>
     <string name="quick_settings_tile_running">代理运行中</string>
     <string name="quick_settings_tile_stopped">代理已停止</string>
