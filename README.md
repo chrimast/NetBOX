@@ -6,6 +6,18 @@ Fork of [AsteriskBOX](https://github.com/Asterisk4Magisk/AsteriskBOX) with a Net
 
 Android sing-box GUI client.
 
+## Related repositories (keep these forks only)
+
+Do **not** fork `reF1nd/sing-box`, `Leadaxe/sing-box-lx`, `Fanju6/NetProxy-Magisk`, or `AsteriskNG`. Protocol overlay is copied from NetSBX; Magisk lives in NetSBX, not here.
+
+| Repository | GitHub fork of | Why it exists |
+|---|---|---|
+| [chrimast/NetBOX](https://github.com/chrimast/NetBOX) (`feat/netbox`) | [Asterisk4Magisk/AsteriskBOX](https://github.com/Asterisk4Magisk/AsteriskBOX) | This app. Track upstream with `git merge upstream/main`; never push to Asterisk4Magisk. |
+| [chrimast/AndroidLibBoxLite](https://github.com/chrimast/AndroidLibBoxLite) (`feat/xhttp-overlay`) | [Asterisk4Magisk/AndroidLibBoxLite](https://github.com/Asterisk4Magisk/AndroidLibBoxLite) | Overlaid `libbox.so` / ROOT CLI. Same reF1nd pin + lx **client** files as NetSBX. JNI and CLI must come from this tree. |
+| [chrimast/NetSBX](https://github.com/chrimast/NetSBX) | *(not a GitHub fork)* | Magisk sister product (`id=NetSBX`). Same overlay pin; ships `sing-box` + `netproxyctl` with `with_ebpf`, not this AAR. |
+
+Do not copy a Magisk ELF onto `libbox.so`, or an AAR / `linux-arm64` binary onto NetSBX `bin/sing-box`. Do not run NetBOX/NG ROOT together with the NetSBX module.
+
 ## Telegram Channel
 
 [Asterisk4Magisk](https://t.me/Asterisk4Magisk)
@@ -112,7 +124,7 @@ If Gradle cannot find the Android NDK, configure it through Android Studio, `ndk
 
 - [@SagerNet/sing-box](https://github.com/SagerNet/sing-box)
 - [@reF1nd/sing-box-releases](https://github.com/reF1nd/sing-box-releases)
-- [@Asterisk4Magisk/AndroidLibBoxLite](https://github.com/Asterisk4Magisk/AndroidLibBoxLite)
+- [@Asterisk4Magisk/AndroidLibBoxLite](https://github.com/Asterisk4Magisk/AndroidLibBoxLite) (this fork uses [chrimast/AndroidLibBoxLite](https://github.com/chrimast/AndroidLibBoxLite) `feat/xhttp-overlay`)
 - [@heiher/hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)
 - [@topjohnwu/libsu](https://github.com/topjohnwu/libsu)
 - [@android/material3](https://developer.android.com/develop/ui/compose/designsystems/material3)

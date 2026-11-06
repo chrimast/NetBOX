@@ -6,6 +6,18 @@
 
 Android sing-box GUI 客户端。
 
+## 相关仓库（只保留这些 fork）
+
+**不要**再 fork `reF1nd/sing-box`、`Leadaxe/sing-box-lx`、`Fanju6/NetProxy-Magisk`、AsteriskNG。协议叠层从 NetSBX 拷；Magisk 模块在 NetSBX，不在本仓。
+
+| 仓库 | GitHub fork 自 | 用途 |
+|---|---|---|
+| [chrimast/NetBOX](https://github.com/chrimast/NetBOX)（`feat/netbox`） | [Asterisk4Magisk/AsteriskBOX](https://github.com/Asterisk4Magisk/AsteriskBOX) | 本 App。用 `git merge upstream/main` 跟上游，**禁止** push 到 Asterisk4Magisk。 |
+| [chrimast/AndroidLibBoxLite](https://github.com/chrimast/AndroidLibBoxLite)（`feat/xhttp-overlay`） | [Asterisk4Magisk/AndroidLibBoxLite](https://github.com/Asterisk4Magisk/AndroidLibBoxLite) | 叠层后的 `libbox.so` / ROOT CLI。与 NetSBX 同一根 reF1nd 针 + lx **客户端**文件。JNI 和 CLI 必须来自这棵树。 |
+| [chrimast/NetSBX](https://github.com/chrimast/NetSBX) | *不是 GitHub fork* | Magisk 姊妹产品（`id=NetSBX`）。同一叠层针；产物是带 `with_ebpf` 的 `sing-box` + `netproxyctl`，不是这份 AAR。 |
+
+不要把 Magisk ELF 盖到 `libbox.so`，也不要把 AAR / `linux-arm64` 盖到 NetSBX 的 `bin/sing-box`。不要和 NetSBX 模块同时开 ROOT。
+
 ## Telegram 频道
 
 [Asterisk4Magisk](https://t.me/Asterisk4Magisk)
@@ -112,7 +124,7 @@ macOS 或 Linux：
 
 - [@SagerNet/sing-box](https://github.com/SagerNet/sing-box)
 - [@reF1nd/sing-box-releases](https://github.com/reF1nd/sing-box-releases)
-- [@Asterisk4Magisk/AndroidLibBoxLite](https://github.com/Asterisk4Magisk/AndroidLibBoxLite)
+- [@Asterisk4Magisk/AndroidLibBoxLite](https://github.com/Asterisk4Magisk/AndroidLibBoxLite)（本 fork 用 [chrimast/AndroidLibBoxLite](https://github.com/chrimast/AndroidLibBoxLite) 的 `feat/xhttp-overlay`）
 - [@heiher/hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)
 - [@topjohnwu/libsu](https://github.com/topjohnwu/libsu)
 - [@android/material3](https://developer.android.com/develop/ui/compose/designsystems/material3)
