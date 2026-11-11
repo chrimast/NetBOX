@@ -15,7 +15,8 @@ import app.effects.AppActivityForegroundTracker
 import app.effects.SingBoxRuntimeLifecycleCoordinator
 import app.modes.RunModeVpnService
 import features.boot.BootAutoConnect
-import features.quicksettings.requestQuickSettingsTileRefresh
+import features.quicksettings.quickSettingsTileState
+import features.quicksettings.refreshQuickSettingsTileUnlessShowing
 import data.AndroidAppStateStore
 import data.AppSettingsPreferences
 import engine.singbox.config.validateSingBoxRuntimeConfiguration
@@ -58,6 +59,15 @@ import engine.proxy.LocalProxyRuntime
 import engine.vpn.AsteriskVpnService
 import engine.vpn.VpnSession
 import app.effects.synchronizeProxyStatus
+import app.effects.RunningConfigurationApplier
+import androidx.compose.runtime.snapshotFlow
+import engine.proxy.ProxyServiceResult
+import engine.proxy.ProxyServiceUseCase
+import features.home.HomeServiceOperation
+import features.resources.ResourceFileUpdateResult
+import features.resources.isBusy
+import kotlinx.coroutines.flow.first
+import ui.feedback.AndroidToastTipNotifier
 
 class AsteriskApplication : Application(), SingletonImageLoader.Factory {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -142,7 +152,11 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
                 ): Result<Boolean> = when (
                     val result = outboundRepository.persistImport(expected, updated)
                 ) {
-                    OutboundCommandResult.ImportPersisted -> Result.success(true)
+                    OutboundCommandResult.ImportPersisted -> {
+                        // Failure bookkeeping commits through here too; only new outbounds apply.
+                        if (updated.outboundConfigChangedFrom(expected)) runningConfigurationApplier.request()
+                        Result.success(true)
+                    }
                     OutboundCommandResult.Conflict -> Result.success(false)
                     is OutboundCommandResult.Invalid -> Result.failure(result.error)
                     is OutboundCommandResult.PersistenceFailed -> Result.failure(result.error)
@@ -222,6 +236,71 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
         )
     }
 
+    /** Applies successful resource and subscription updates to a running core. */
+    private val runningConfigurationApplier by lazy {
+        RunningConfigurationApplier(
+            scope = appScope,
+            updatesBusy = resourceFileUpdateCoordinator.state.map { state -> state.isBusy },
+            apply = ::applyConfigurationToRunningCore,
+            reportFailure = { error ->
+                AndroidAppLogger.error(RunningConfigurationLogTag, "Automatic configuration apply failed", error)
+            },
+        )
+    }
+
+    /**
+     * Same apply as the outbound page's banner: an in-place reload in VPN mode, a supervised
+     * restart in ROOT modes. It claims the home screen's service operation state, so the power
+     * button, the banner and this apply exclude each other, and a stopped core is left alone.
+     */
+    private suspend fun applyConfigurationToRunningCore() {
+        while (true) {
+            snapshotFlow { homeServiceOperationState.isIdle() }.first { idle -> idle }
+            val claimed = withContext(Dispatchers.Main.immediate) {
+                homeServiceOperationState.isIdle().also { idle ->
+                    if (idle) homeServiceOperationState.operation = HomeServiceOperation.Applying
+                }
+            }
+            if (claimed) break
+        }
+        try {
+            val useCase = ProxyServiceUseCase(proxyEngine)
+            val current = stateStore.state.value
+            if (useCase.isRunning(current) != true) return
+            // `proxyRunning` is only kept in sync by the UI in ROOT modes; the probe above is live.
+            val snapshot = current.copy(proxyRunning = true)
+            when (val result = useCase.applyConfiguration(snapshot, singBoxRuntime::reloadVpnConfiguration)) {
+                is ProxyServiceResult.Success -> {
+                    AndroidAppLogger.info(RunningConfigurationLogTag, "Applied updated configuration")
+                    stateStore.update { state ->
+                        state.copy(
+                            proxyRunning = result.proxyRunning,
+                            localProxyPort = result.appState?.localProxyPort ?: state.localProxyPort,
+                            singBoxControlPort = result.appState?.singBoxControlPort ?: state.singBoxControlPort,
+                            // Outbound edits committed after the snapshot still wait for the banner.
+                            pendingConfigRestart = state.pendingConfigRestart &&
+                                state.outboundConfigChangedFrom(snapshot),
+                        )
+                    }
+                }
+                is ProxyServiceResult.Failed -> {
+                    // A failed restart may already have stopped the core, so read back what runs.
+                    useCase.isRunning(snapshot)?.let { running ->
+                        stateStore.update { state -> state.copy(proxyRunning = running) }
+                    }
+                    AndroidToastTipNotifier(applicationContext).showError(
+                        result.error,
+                        getString(R.string.proxy_service_auto_apply_failed),
+                    )
+                }
+            }
+        } finally {
+            withContext(Dispatchers.Main.immediate) {
+                homeServiceOperationState.operation = HomeServiceOperation.Idle
+            }
+        }
+    }
+
     /**
      * Brings the app state in line when a tunnel ends in the service process, whether it was
      * stopped, revoked or its process died. The session watch reports the end, so this costs
@@ -250,15 +329,15 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
     /**
      * Asks SystemUI to rebind the quick settings tile whenever a state source in this process
      * changes it; the first collection is the refresh at process start. The language is included
-     * because opening the panel no longer refreshes an active tile. The tile writing back
-     * `proxyRunning` triggers one more round, which converges because the state then matches.
+     * because opening the panel no longer refreshes an active tile. A `proxyRunning` the tile
+     * writes back itself is skipped, since the tile shows it without reading the status again.
      */
     private fun refreshQuickSettingsTileOnProxyStateChange() {
         appScope.launch {
             stateStore.state
-                .map { state -> Triple(state.runMode, state.proxyRunning, state.languageMode) }
+                .map { state -> state.quickSettingsTileState() }
                 .distinctUntilChanged()
-                .collect { requestQuickSettingsTileRefresh(applicationContext) }
+                .collect { tileState -> refreshQuickSettingsTileUnlessShowing(applicationContext, tileState) }
         }
     }
 
@@ -275,6 +354,11 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
         // HTTP fetches here go through the tunnel's local proxy, which the service publishes.
         LocalProxyRuntime.attachExternalSource { VpnSession.runningLocalProxyOptions(applicationContext) }
         synchronizeOnVpnSessionEnd()
+        appScope.launch {
+            resourceFileUpdateCoordinator.results.collect { result ->
+                if (result is ResourceFileUpdateResult.Success) runningConfigurationApplier.request()
+            }
+        }
         refreshQuickSettingsTileOnProxyStateChange()
         appScope.launch {
             val scheduler = ResourceAutoUpdateScheduler(applicationContext)
@@ -336,3 +420,8 @@ class AsteriskApplication : Application(), SingletonImageLoader.Factory {
         val enabled: Boolean,
     )
 }
+
+private fun HomeServiceOperationState.isIdle(): Boolean =
+    operation == HomeServiceOperation.Idle && !modeOperationInProgress
+
+private const val RunningConfigurationLogTag = "RunningConfiguration"

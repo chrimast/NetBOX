@@ -426,30 +426,25 @@ private fun StringListBulkEditorSheet(
         onDismissRequest = onDismissRequest,
         title = title,
         startAction = {
-            AsteriskActionButton(
-                text = stringResource(R.string.common_cancel),
-                icon = Icons.Rounded.Close,
+            AsteriskCancelButton(
                 onClick = onDismissRequest,
             )
         },
         endAction = {
-            AsteriskActionButton(
-                text = stringResource(R.string.common_save),
-                icon = Icons.Rounded.Save,
+            AsteriskSaveButton(
                 enabled = error == null,
                 onClick = { result.values?.let(onSave) },
             )
         },
     ) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
-            OutlinedTextField(
+            AsteriskNoWrapTextField(
                 value = value,
                 onValueChange = onValueChange,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 220.dp).padding(top = 12.dp),
                 minLines = 8,
                 isError = error != null,
                 supportingText = error?.let { message -> ({ Text(message) }) },
-                shape = AsteriskShapeTokens.InnerContainer,
             )
         }
     }

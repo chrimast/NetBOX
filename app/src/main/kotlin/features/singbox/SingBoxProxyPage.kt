@@ -10,12 +10,14 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -26,6 +28,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -99,6 +102,7 @@ import app.modes.SingBoxProxySortName
 import app.selectableManagedOutbounds
 import app.withSelectorSelection
 import engine.singbox.config.APP_GLOBAL_SELECTOR
+import engine.singbox.plugin.PluginOutbounds
 import engine.singbox.runtime.SingBoxProxiesState
 import engine.singbox.runtime.SingBoxProxyGroup
 import engine.singbox.runtime.SingBoxProxyNode
@@ -112,6 +116,7 @@ import ui.components.AsteriskExpansionIndicator
 import ui.components.AsteriskExpressiveCard
 import ui.components.AsteriskFilterChip
 import ui.components.AsteriskInfoChip
+import ui.components.AsteriskModalBottomSheet
 import ui.components.AsteriskScaffold
 import ui.components.AsteriskSearchTopAppBar
 import ui.components.AsteriskSelectionCard
@@ -193,6 +198,12 @@ fun SingBoxProxyPage(
     val globalGroupName = stringResource(R.string.routing_global)
     val unavailableLabel = stringResource(R.string.common_unavailable)
     val outboundChoices = selectableManagedOutbounds(appState)
+    // Plugin outbounds run as core `socks` outbounds; show the protocol they carry.
+    val outboundProtocolTypes = remember(appState.outbounds, appState.pluginProtocols) {
+        appState.outbounds
+            .filter { outbound -> PluginOutbounds.requirementFor(outbound.type, appState.pluginProtocols) != null }
+            .associate { outbound -> outbound.tag to outbound.type }
+    }
     val outboundDisplayNames = outboundChoices.associate { choice ->
         choice.tag to choice.localizedLabel()
     }
@@ -417,7 +428,7 @@ fun SingBoxProxyPage(
                     enter = AsteriskMotion.contentEnter(),
                     exit = AsteriskMotion.contentExit(),
                 ) {
-                    AsteriskTopBarControls {
+                    AsteriskTopBarControls(alignEndToAppBarActions = true) {
                         if (visibleProxies.groups.size > 1) {
                             ProxyGroupTabs(
                                 groups = visibleProxies.groups,
@@ -467,6 +478,7 @@ fun SingBoxProxyPage(
                                 query = keyword,
                                 sort = appState.singBoxProxySort,
                                 displayNamesForGroup = ::groupNodeDisplayNames,
+                                protocolTypes = outboundProtocolTypes,
                                 testingBaselines = runtimeState.delayTestingBaselines,
                                 failedNodes = runtimeState.delayFailedNodes,
                             )
@@ -585,6 +597,7 @@ fun SingBoxProxyPage(
                                             node = node,
                                             displayName = displayNames[node.name]
                                                 ?: node.name.visibleRuntimeName(unavailableLabel),
+                                            protocolType = outboundProtocolTypes[node.name] ?: node.type,
                                             selected = isSingBoxProxyNodeCurrent(group, node.name, pendingSelections),
                                             selectionEnabled = selectionBehavior.cardEnabled,
                                             delayTestEnabled = runtimeAvailable && testingTarget == null,
@@ -633,6 +646,7 @@ fun SingBoxProxyPage(
                                 displayNames = pageDisplayNames,
                                 testingBaselines = runtimeState.delayTestingBaselines,
                                 failedNodes = runtimeState.delayFailedNodes,
+                                protocolTypes = outboundProtocolTypes,
                             )
                         }
                         val selectedNodeName = (pendingSelections[group?.name] ?: group?.now).orEmpty().takeIf(String::isNotBlank)
@@ -712,6 +726,7 @@ fun SingBoxProxyPage(
                                             node = node,
                                             displayName = pageDisplayNames[node.name]
                                                 ?: node.name.visibleRuntimeName(unavailableLabel),
+                                            protocolType = outboundProtocolTypes[node.name] ?: node.type,
                                             selected = isSingBoxProxyNodeCurrent(
                                                 group = group,
                                                 nodeName = node.name,
@@ -900,9 +915,28 @@ private fun ProxyGroupTabs(
 ) {
     if (groups.isEmpty()) return
     val tabScrollState = rememberScrollState()
+    var availableWidthPx by remember { mutableIntStateOf(0) }
+    var contentWidthPx by remember { mutableIntStateOf(0) }
     var viewportWidthPx by remember { mutableIntStateOf(0) }
     var tabBounds by remember { mutableStateOf<Map<String, ProxyGroupTabBounds>>(emptyMap()) }
+    var showGroupPicker by remember { mutableStateOf(false) }
+    // Compare with the full row, so reserving button space cannot keep it visible
+    // after the groups fit again (for example, after rotating or filtering).
+    val hasOverflow = availableWidthPx in 1..<contentWidthPx
     val selectedBounds = tabBounds[selectedGroupName]
+
+    LaunchedEffect(hasOverflow) {
+        if (!hasOverflow) showGroupPicker = false
+    }
+
+    fun selectGroup(group: SingBoxProxyGroup) {
+        showGroupPicker = false
+        if (group.name == selectedGroupName) {
+            onReselectCurrentGroup()
+        } else {
+            onSelectedGroupNameChange(group.name)
+        }
+    }
 
     LaunchedEffect(selectedGroupName, selectedBounds, viewportWidthPx, tabScrollState.maxValue) {
         if (selectedBounds == null || viewportWidthPx <= 0) return@LaunchedEffect
@@ -918,33 +952,75 @@ private fun ProxyGroupTabs(
         }
     }
 
-    Box(
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .onSizeChanged { size -> viewportWidthPx = size.width }
-            .horizontalScroll(tabScrollState),
+            .onSizeChanged { size -> availableWidthPx = size.width },
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .onSizeChanged { size -> viewportWidthPx = size.width }
+                .horizontalScroll(tabScrollState),
+        ) {
+            Row(
+                modifier = Modifier.onSizeChanged { size -> contentWidthPx = size.width },
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                groups.forEach { group ->
+                    AsteriskFilterChip(
+                        selected = group.name == selectedGroupName,
+                        onClick = { selectGroup(group) },
+                        label = group.displayName,
+                        modifier = Modifier
+                            .semantics { selected = group.name == selectedGroupName }
+                            .onGloballyPositioned { coordinates ->
+                                val bounds = ProxyGroupTabBounds(
+                                    leftPx = coordinates.positionInParent().x.roundToInt(),
+                                    widthPx = coordinates.size.width,
+                                )
+                                if (tabBounds[group.name] != bounds) {
+                                    tabBounds = tabBounds + (group.name to bounds)
+                                }
+                            },
+                    )
+                }
+            }
+        }
+        if (hasOverflow) {
+            IconButton(
+                onClick = { showGroupPicker = true },
+                modifier = Modifier.size(48.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ExpandMore,
+                    contentDescription = stringResource(R.string.sing_box_proxies_expand_groups),
+                )
+            }
+        }
+    }
+
+    AsteriskModalBottomSheet(
+        show = showGroupPicker && hasOverflow,
+        onDismissRequest = { showGroupPicker = false },
+        title = stringResource(R.string.sing_box_proxies_groups),
+    ) {
+        FlowRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             groups.forEach { group ->
                 AsteriskFilterChip(
                     selected = group.name == selectedGroupName,
-                    onClick = {
-                        if (group.name == selectedGroupName) {
-                            onReselectCurrentGroup()
-                        } else {
-                            onSelectedGroupNameChange(group.name)
-                        }
-                    },
+                    onClick = { selectGroup(group) },
                     label = group.displayName,
-                    modifier = Modifier.onGloballyPositioned { coordinates ->
-                        val bounds = ProxyGroupTabBounds(
-                            leftPx = coordinates.positionInParent().x.roundToInt(),
-                            widthPx = coordinates.size.width,
-                        )
-                        if (tabBounds[group.name] != bounds) {
-                            tabBounds = tabBounds + (group.name to bounds)
-                        }
-                    },
+                    modifier = Modifier.semantics { selected = group.name == selectedGroupName },
                 )
             }
         }
@@ -1199,6 +1275,7 @@ private val SingBoxProxyOptionsMenuWidth = 224.dp
 private fun SingBoxProxyNodeCard(
     node: SingBoxProxyNode,
     displayName: String,
+    protocolType: String,
     selected: Boolean,
     selectionEnabled: Boolean,
     delayTestEnabled: Boolean,
@@ -1214,6 +1291,14 @@ private fun SingBoxProxyNodeCard(
             modifier = Modifier.fillMaxSize().padding(SingBoxProxyNodeCardPadding),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
+            val titleStyle = if (compact) {
+                MaterialTheme.typography.titleSmall.copy(
+                    fontSize = 13.sp,
+                    lineHeight = 17.sp,
+                )
+            } else {
+                MaterialTheme.typography.titleMedium
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top,
@@ -1222,30 +1307,32 @@ private fun SingBoxProxyNodeCard(
                 Text(
                     text = displayName,
                     modifier = Modifier.weight(1f),
-                    style = if (compact) {
-                        MaterialTheme.typography.titleSmall.copy(
-                            fontSize = 13.sp,
-                            lineHeight = 17.sp,
-                        )
-                    } else {
-                        MaterialTheme.typography.titleMedium
-                    },
+                    style = titleStyle,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (selected) {
-                    Icon(
-                        imageVector = Icons.Rounded.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+                    val titleLineHeight = with(LocalDensity.current) { titleStyle.lineHeight.toDp() }
+                    // Center the icon on the title's first line.
+                    Box(
+                        modifier = Modifier
+                            .padding(end = singBoxProxyNodeSelectedIconEndInset(titleLineHeight))
+                            .height(titleLineHeight),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.requiredSize(SingBoxProxyNodeSelectedIconSize),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
             ProtocolDelayLine(
-                protocol = node.type,
+                protocol = protocolType,
                 delay = node.delay,
                 delayStatus = delayStatus,
                 selected = selected,
@@ -1257,7 +1344,7 @@ private fun SingBoxProxyNodeCard(
         }
     }
     val cardModifier = modifier
-        .height(SingBoxProxyNodeCardHeight)
+        .height(if (compact) SingBoxProxyNodeCompactCardHeight else SingBoxProxyNodeCardHeight)
         .semantics { this.selected = selected }
     AsteriskSelectionCard(
         selected = selected,
@@ -1294,14 +1381,14 @@ private fun ProtocolDelayLine(
     val viewConfiguration = LocalViewConfiguration.current
     val chipTouchTargetViewConfiguration = remember(viewConfiguration) {
         object : ViewConfiguration by viewConfiguration {
-            override val minimumTouchTargetSize = DpSize(28.dp, 28.dp)
+            override val minimumTouchTargetSize = DpSize(24.dp, 24.dp)
         }
     }
     CompositionLocalProvider(LocalViewConfiguration provides chipTouchTargetViewConfiguration) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(28.dp)
+                .height(24.dp)
                 .clip(ui.theme.AsteriskShapeTokens.Pill)
                 .clickable(enabled = enabled, onClick = onClick),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1321,7 +1408,7 @@ private fun ProtocolDelayLine(
                 },
             )
             Box(
-                modifier = Modifier.padding(end = 8.dp).height(28.dp),
+                modifier = Modifier.padding(end = 8.dp).height(24.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
                 if (testing) {
@@ -1529,6 +1616,23 @@ private fun delayColor(
 }
 
 private val SingBoxProxyNodeCardHeight = 112.dp
-private val SingBoxProxyNodeCardPadding = PaddingValues(start = 10.dp, top = 14.dp, end = 10.dp, bottom = 10.dp)
+
+// Compact (multi-column) cards fit a two-line title, a 2dp gap and the 28dp protocol/delay line.
+private val SingBoxProxyNodeCompactCardHeight = 90.dp
+private val SingBoxProxyNodeCardTopPadding = 14.dp
+private val SingBoxProxyNodeCardHorizontalPadding = 10.dp
+private val SingBoxProxyNodeCardPadding = PaddingValues(
+    start = SingBoxProxyNodeCardHorizontalPadding,
+    top = SingBoxProxyNodeCardTopPadding,
+    end = SingBoxProxyNodeCardHorizontalPadding,
+    bottom = 10.dp,
+)
+private val SingBoxProxyNodeSelectedIconSize = 20.dp
+
+// The selected icon is centered on the title's first line; this end inset keeps it
+// as far from the card's end edge as from its top edge.
+private fun singBoxProxyNodeSelectedIconEndInset(titleLineHeight: Dp): Dp =
+    (SingBoxProxyNodeCardTopPadding - SingBoxProxyNodeCardHorizontalPadding +
+        (titleLineHeight - SingBoxProxyNodeSelectedIconSize) / 2).coerceAtLeast(0.dp)
 private val SingBoxProxyNodeGridSpacing = 12.dp
 private val SingBoxFloatingToolbarBottomSpacing = 16.dp

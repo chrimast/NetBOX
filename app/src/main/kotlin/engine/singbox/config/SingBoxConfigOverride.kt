@@ -4,6 +4,7 @@
 package engine.singbox.config
 
 import com.dokar.quickjs.quickJs
+import engine.singbox.plugin.compilePluginOutbounds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -12,6 +13,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import utils.stringOrNull
 
 internal data class SingBoxScriptLog(val level: String, val message: String)
 
@@ -60,9 +62,9 @@ internal fun runSingBoxConfigOverride(root: JsonObject, script: String): SingBox
         val result = Json.parseToJsonElement(raw) as JsonObject
         val logs = (result["logs"] as? JsonArray).orEmpty().mapNotNull { item ->
             val log = item as? JsonObject ?: return@mapNotNull null
-            SingBoxScriptLog(log.string("level").orEmpty(), log.string("message").orEmpty())
+            SingBoxScriptLog(log.stringOrNull("level").orEmpty(), log.stringOrNull("message").orEmpty())
         }
-        val error = result.string("error")
+        val error = result.stringOrNull("error")
         val output = result["config"] as? JsonObject
         SingBoxScriptResult(
             logs = logs,
@@ -76,11 +78,17 @@ internal fun runSingBoxConfigOverride(root: JsonObject, script: String): SingBox
     }
 }
 
-internal fun debugSingBoxConfigOverride(root: JsonObject, script: String): SingBoxScriptResult {
+internal fun debugSingBoxConfigOverride(
+    root: JsonObject,
+    script: String,
+    pluginProtocols: Collection<String>,
+): SingBoxScriptResult {
     val result = runSingBoxConfigOverride(root, script)
     if (!result.success) return result
     return try {
-        SingBoxConfigChecker.check(encodeSingBoxJson(checkNotNull(result.output)))
+        // Plugin outbounds are compiled after the script, as at runtime.
+        val output = compilePluginOutbounds(checkNotNull(result.output), pluginProtocols, target = null).root
+        SingBoxConfigChecker.check(encodeSingBoxJson(output))
         result
     } catch (cancelled: CancellationException) {
         throw cancelled
@@ -88,8 +96,6 @@ internal fun debugSingBoxConfigOverride(root: JsonObject, script: String): SingB
         result.copy(warning = error.message ?: "Configuration validation failed")
     }
 }
-
-private fun JsonObject.string(key: String): String? = (get(key) as? JsonPrimitive)?.contentOrNull
 
 internal fun buildSingBoxOverrideScript(script: String, root: JsonObject): String = """
     (function() {

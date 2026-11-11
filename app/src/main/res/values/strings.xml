@@ -228,7 +228,7 @@
     <string name="monitor_network_quality_download_responsiveness_explanation">How many small downloads the link can finish per minute while busy. 500 RPM or more stays responsive under load; under 200 RPM means interactions queue up.</string>
     <string name="monitor_network_quality_elapsed_time">Elapsed time</string>
     <string name="monitor_network_quality_elapsed_time_explanation">Total time the test ran, rounded down to seconds. Pure artefact of the test — not a property of the link.</string>
-    <string name="monitor_network_quality_endpoint_summary">Apple NetworkQuality config URL. Use the default unless you operate a custom mensura mirror.</string>
+    <string name="monitor_network_quality_endpoint_summary">Apple networkQuality config URL. Use the default unless you operate a custom mensura mirror.</string>
     <string name="monitor_network_quality_error_title">Network quality test failed</string>
     <string name="monitor_network_quality_explanation_title">About these numbers</string>
     <string name="monitor_network_quality_fab_start">Start</string>
@@ -269,6 +269,8 @@
     <string name="sing_box_proxies_delay_status_failed">Failed</string>
     <string name="sing_box_proxies_delay_testing">Testing</string>
     <string name="sing_box_proxies_delay_testing_progress">%1$d/%2$d</string>
+    <string name="sing_box_proxies_groups">Proxy groups</string>
+    <string name="sing_box_proxies_expand_groups">Show all proxy groups</string>
     <string name="sing_box_proxies_group_test">Test group</string>
     <string name="sing_box_proxies_group_expanded">Expanded</string>
     <string name="sing_box_proxies_group_collapsed">Collapsed</string>
@@ -496,6 +498,22 @@
     <string name="outbound_editor_value">Value</string>
     <string name="outbound_field_allow_insecure">Allow insecure</string>
     <string name="outbound_field_alpn">ALPN</string>
+    <string name="outbound_field_gso">GSO</string>
+    <string name="outbound_field_blackhole_detection">Blackhole detection</string>
+    <string name="outbound_field_certificates">Certificates</string>
+    <string name="outbound_field_extra_paths">Extra paths</string>
+    <string name="outbound_field_keep_alive_interval">Keep-alive interval</string>
+    <string name="outbound_field_max_paths">Max paths</string>
+    <string name="outbound_field_min_mtu">Min MTU</string>
+    <string name="outbound_field_mtu_discovery">MTU discovery</string>
+    <string name="outbound_field_pinned_cert_sha256">Pinned certificate SHA-256</string>
+    <string name="outbound_field_sub_protocol">Sub-protocol</string>
+    <string name="outbound_field_zero_rtt">Zero-RTT</string>
+    <string name="outbound_field_initial_mtu">Initial MTU</string>
+    <string name="outbound_field_mieru_transport">Mieru transport</string>
+    <string name="outbound_field_mtu">MTU</string>
+    <string name="outbound_field_multiplexing_level">Multiplexing level</string>
+    <string name="outbound_field_traffic_pattern">Traffic pattern (JSON)</string>
     <string name="outbound_field_alter_id">Alter ID</string>
     <string name="outbound_field_authenticated_length">Authenticated length</string>
     <string name="outbound_field_authentication_bytes">Authentication bytes</string>
@@ -779,7 +797,7 @@
     <string name="singbox_override_script_debug_failed">Failed</string>
     <string name="singbox_override_script_debug_logs">Console</string>
     <string name="singbox_override_script_debug_no_logs">No console output</string>
-    <string name="singbox_override_script_debug_no_output">No output YAML</string>
+    <string name="singbox_override_script_debug_no_output">No output JSON</string>
     <string name="singbox_override_script_debug_output">Output JSON</string>
     <string name="singbox_override_script_debug_run">Debug</string>
     <string name="singbox_override_script_debug_running">Debugging…</string>
@@ -1105,6 +1123,7 @@
     <string name="proxy_error_ebpf_tc_unsupported_fallback">If cgroup also fails to start, open Settings → Advanced settings and select TUN (ROOT) in Run mode instead.</string>
     <string name="proxy_error_ebpf_tc_unsupported_report">When reporting this, include the error text above and the asteriskd / sing-box section of logcat.</string>
     <string name="proxy_error_ebpf_tc_unsupported_switch">Workaround: open Settings → Advanced settings, confirm eBPF (ROOT) is selected in Run mode, then under Proxy settings (eBPF) change Data plane from socket_assign to cgroup and retry.</string>
+    <string name="proxy_service_auto_apply_failed">Unable to apply the update to the running service</string>
     <string name="proxy_service_started">Proxy service started</string>
     <string name="proxy_service_stopped">Proxy service stopped</string>
     <string name="settings_proxy_bpf2socks">Proxy settings (BPF2SOCKS)</string>
@@ -1396,8 +1415,7 @@
     <string name="error_resource_file_picker_missing">Resource file picker is not registered</string>
     <string name="resource_file_download_notification_cancelled">Resource file update cancelled</string>
     <string name="resource_file_download_notification_channel">Resource file updates</string>
-    <string name="resource_file_download_notification_complete">Resource files updated</string>
-    <string name="resource_file_download_notification_failed">Resource file update failed</string>
+    <string name="resource_file_download_notification_failed">Resource file update failed: %1$s</string>
     <string name="resource_file_download_notification_progress">Downloading %1$s</string>
     <string name="resource_file_download_notification_title">Updating resource files</string>
     <string name="settings_resource_file_update_queued">Queued for update</string>
@@ -1619,4 +1637,19 @@
     <string name="license_title">Third Party Licenses</string>
     <string name="settings_about_project">About project</string>
     <string name="settings_open_source_licenses">Open source licenses</string>
+
+    <!-- Protocol plugins -->
+    <string name="settings_plugins">Plugins</string>
+    <string name="settings_plugins_summary">Run protocols shipped as separate APKs</string>
+    <string name="plugin_packages_title">Protocol plugins</string>
+    <string name="plugin_installed">Installed</string>
+    <string name="plugin_not_installed">Not installed</string>
+    <string name="plugin_installed_summary">%1$s · %2$s</string>
+    <string name="plugin_missing_summary">Tap to download</string>
+    <string name="plugin_trust_note">Plugins run as child processes of the core. Only plugins signed by husi, SagerNet, Exclave or Matsuri are recognized.</string>
+    <string name="plugin_implementations_title">Protocol implementations</string>
+    <string name="plugin_use_plugin">Use the %1$s plugin</string>
+    <string name="plugin_use_hysteria2_summary">Replaces the built-in implementation; port hopping is not supported</string>
+    <string name="plugin_use_naive_summary">Replaces the built-in implementation; QUIC is not supported</string>
+    <string name="plugin_missing_message">The %1$s plugin (%2$s) is not installed. Install it from Advanced settings → Plugins and try again.</string>
 </resources>

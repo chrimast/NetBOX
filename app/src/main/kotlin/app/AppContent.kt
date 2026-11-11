@@ -85,6 +85,7 @@ import features.selector.SelectorEditorPage
 import features.selector.SelectorManagementPage
 import features.settings.SettingsPage
 import features.singbox.SingBoxOverrideScriptPage
+import features.singbox.SingBoxPluginPage
 import features.singbox.SingBoxDashboardPage
 import features.singbox.SingBoxProxyDestination
 import ui.components.AsteriskFloatingNavigationBar
@@ -177,6 +178,9 @@ fun AppContent(
                 }
                 entry<Route.License> {
                     LicensePage(padding = padding)
+                }
+                entry<Route.Plugins> {
+                    SingBoxPluginPage(padding = padding)
                 }
                 entry<Route.CoreLogs> {
                     CoreLogsPage(padding = padding)
@@ -317,7 +321,7 @@ fun AppContent(
             // Global error dialog — visible across every nav destination so the user sees the
             // diagnostic immediately on the home page after a failed proxy start, regardless of
             // which tab they are on.
-            features.singbox.ProxyErrorHost()
+            features.proxy.ProxyErrorHost()
         }
     }
 }

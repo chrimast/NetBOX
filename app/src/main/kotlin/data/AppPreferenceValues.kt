@@ -25,7 +25,7 @@ internal fun AppState.preferenceValues(): Map<String, AppPreferenceValue> = buil
     fun string(key: String, value: String) = put(key, AppPreferenceValue.StringValue(value))
     fun stringList(key: String, value: List<String>) = string(key, StringListJson.encode(value))
     fun serviceControlWifiRule(
-        rule: app.ServiceControlWifiRule,
+        rule: features.settings.servicecontrol.ServiceControlWifiRule,
         enabledKey: String,
         ssidsKey: String,
         bssidsKey: String,
@@ -75,6 +75,7 @@ internal fun AppState.preferenceValues(): Map<String, AppPreferenceValue> = buil
     string(KeyTunIpv6Cidr, tunIpv6Cidr)
     boolean(KeyEnableConfigOverrideScript, enableConfigOverrideScript)
     string(KeyConfigOverrideScript, configOverrideScript)
+    stringList(KeyPluginProtocols, pluginProtocols)
     string(KeyCoreLogLevel, coreLogLevel)
     boolean(KeyEnableTrafficStatsNotification, enableTrafficStatsNotification)
     boolean(KeyEnableBroadcastControl, enableBroadcastControl)

@@ -10,11 +10,11 @@ import androidx.core.content.edit
 import app.AppState
 import app.modes.normalizeNetworkActivityStyle
 import app.withNormalizedConnectionTestSettings
-import app.ServiceControlSchedule
-import app.ServiceControlKeyguard
-import app.ServiceControlSettings
-import app.ServiceControlWifi
-import app.ServiceControlWifiRule
+import features.settings.servicecontrol.ServiceControlSchedule
+import features.settings.servicecontrol.ServiceControlKeyguard
+import features.settings.servicecontrol.ServiceControlSettings
+import features.settings.servicecontrol.ServiceControlWifi
+import features.settings.servicecontrol.ServiceControlWifiRule
 import features.settings.servicecontrol.normalizeServiceControlSettings
 import engine.singbox.normalizedEbpfLocalDataPlane
 import java.util.UUID
@@ -158,6 +158,7 @@ internal class AppSettingsPreferences(
                 ?: defaults.tunIpv6Cidr,
             enableConfigOverrideScript = preferences.getBoolean(KeyEnableConfigOverrideScript, defaults.enableConfigOverrideScript),
             configOverrideScript = preferences.getString(KeyConfigOverrideScript, defaults.configOverrideScript) ?: defaults.configOverrideScript,
+            pluginProtocols = preferences.getStringList(KeyPluginProtocols, defaults.pluginProtocols),
             coreLogLevel = preferences.getString(KeyCoreLogLevel, defaults.coreLogLevel)
                 ?: defaults.coreLogLevel,
             enableTrafficStatsNotification = preferences.getBoolean(
@@ -489,6 +490,7 @@ internal const val KeyTunIpv4Cidr = "tun_ipv4_cidr"
 internal const val KeyTunIpv6Cidr = "tun_ipv6_cidr"
 internal const val KeyEnableConfigOverrideScript = "enable_config_override_script"
 internal const val KeyConfigOverrideScript = "config_override_script"
+internal const val KeyPluginProtocols = "plugin_protocols"
 internal const val KeyCoreLogLevel = "core_log_level"
 internal const val KeyEnableTrafficStatsNotification = "enable_traffic_stats_notification"
 internal const val KeyEnableBroadcastControl = "enable_broadcast_control"

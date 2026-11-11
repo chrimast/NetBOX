@@ -33,6 +33,8 @@ import engine.singbox.DefaultSingBoxSnifferTimeout
 import engine.root.RootModeEngine
 import engine.vpn.VpnDefaults
 import features.resources.ResourceFileSourceDefault
+import features.settings.servicecontrol.ServiceControlSettings
+import features.dns.withIpv4FakeIpSettings
 
 data class AppState(
     val colorMode: Int = ColorModeSystem,
@@ -109,6 +111,8 @@ data class AppState(
 
     val enableConfigOverrideScript: Boolean = false,
     val configOverrideScript: String = "const main = (config) => {\n  return config\n}",
+    /** Protocols the core also implements that run through their plugin instead. */
+    val pluginProtocols: List<String> = emptyList(),
     val coreLogLevel: String = DefaultSingBoxLogLevel,
     val enableTrafficStatsNotification: Boolean = false,
     val enableBroadcastControl: Boolean = false,

@@ -31,9 +31,6 @@ import engine.singbox.config.validateSingBoxRuntimeConfiguration
 import features.logs.FailureLogContext
 import features.logs.reportFailure
 import features.resources.runtime.singBoxRuleSetFiles
-import features.settings.sheets.DnsRuleEditorScaffold
-import features.settings.sheets.DnsRuleEditorState
-import features.settings.sheets.dnsServerTypeLabel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -63,7 +60,7 @@ internal fun DnsRuleEditorPage(
     val stored = appState.dnsRules.firstOrNull { rule -> rule.id == ruleId }
     val serverChoices = appState.dnsServers.map { server ->
         server.tag to server.remarks.ifBlank { dnsServerTypeLabel(server.type) }
-    } + if (appState.enableFakeIp) listOf(app.ManagedFakeIpDnsTag to "FakeIP") else emptyList()
+    } + if (appState.enableFakeIp) listOf(features.dns.ManagedFakeIpDnsTag to "FakeIP") else emptyList()
     val serverTags = serverChoices.map { choice -> choice.first }
     val initial = initialDraft ?: stored ?: SingBoxDnsRuleState(
         id = appState.nextAvailableDnsRuleId(),

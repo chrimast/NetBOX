@@ -10,9 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.annotation.StringRes
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,7 +26,7 @@ import engine.vpn.AndroidVpnPermissionRequester
 import features.logs.AndroidLogFileCreator
 import features.resources.runtime.AndroidResourceFilePicker
 import features.settings.locale.localizedAppContext
-import features.singbox.qr.AndroidQrCodeScanRequester
+import features.qr.AndroidQrCodeScanRequester
 import features.importing.ImportOperation
 import features.importing.ImportSource
 import features.importing.ImportStage
@@ -38,8 +36,6 @@ import features.subscription.parseSubscriptionDeepLink
 import features.subscription.usecase.OutboundSubscriptionUpdateResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import system.AndroidLauncherIcon
 import system.applyScreenshotProtection
 import system.setRecentTasksHidden
@@ -85,8 +81,8 @@ class MainActivity : ComponentActivity() {
             appString(R.string.error_outbound_group_share_file_creator_missing)
         },
     )
-    private val notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
+    private val startupPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
     ) {}
 
     private val vpnPermissionLauncher = registerForActivityResult(
@@ -205,38 +201,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun observeRecentTasksVisibility() {
-        val state = (application as AsteriskApplication).stateStore.state
-        setRecentTasksHidden(state.value.hideRecentTasks)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                state.map { it.hideRecentTasks }
-                    .distinctUntilChanged()
-                    .collect { setRecentTasksHidden(it) }
-            }
-        }
+        applyAppStateWhileStarted(AppState::hideRecentTasks) { value -> setRecentTasksHidden(value) }
     }
 
     private fun observeScreenshotProtection() {
-        val state = (application as AsteriskApplication).stateStore.state
-        applyScreenshotProtection(state.value.allowScreenshots)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                state.map { it.allowScreenshots }
-                    .distinctUntilChanged()
-                    .collect { applyScreenshotProtection(it) }
-            }
-        }
+        applyAppStateWhileStarted(AppState::allowScreenshots) { value -> applyScreenshotProtection(value) }
     }
 
     private fun observeLauncherIconVisibility() {
-        val state = (application as AsteriskApplication).stateStore.state
-        AndroidLauncherIcon.setHidden(applicationContext, state.value.hideLauncherIcon)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                state.map { it.hideLauncherIcon }
-                    .distinctUntilChanged()
-                    .collect { AndroidLauncherIcon.setHidden(applicationContext, it) }
-            }
+        applyAppStateWhileStarted(AppState::hideLauncherIcon) { hidden ->
+            AndroidLauncherIcon.setHidden(applicationContext, hidden)
         }
     }
 
@@ -326,11 +300,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestStartupPermissions() {
-        if (
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        val permissions = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.CINNAMON_BUN) {
+                add(Manifest.permission.ACCESS_LOCAL_NETWORK)
+            }
+        }.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+        if (permissions.isNotEmpty()) {
+            startupPermissionLauncher.launch(permissions.toTypedArray())
         }
     }
 

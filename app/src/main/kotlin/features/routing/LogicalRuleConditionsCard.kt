@@ -1,7 +1,7 @@
 // Copyright 2026, AsteriskBOX contributors
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings.sheets
+package features.routing
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,24 +29,31 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.SingBoxDnsRuleLogicalModeOr
-import app.SingBoxDnsRuleState
-import app.SingBoxDnsRuleTypeLogical
-import engine.singbox.config.hasValidDnsRuleStructure
-import features.dns.dnsMatcherCount
 import app.R
 import ui.components.AsteriskExpressiveCard
+import ui.components.EditDeleteDropdownMenu
 import ui.components.ruleEditorAnimatedListContentKey
 import ui.theme.AsteriskMotion
 import ui.icons.AsteriskIcons as Icons
 
+/**
+ * The child conditions of a logical rule, shared by route and DNS rule editors. The rule
+ * type stays generic; callers describe how to read the fields the card shows.
+ */
 @Composable
-internal fun DnsLogicalChildrenCard(
-    rules: List<SingBoxDnsRuleState>,
+internal fun <T> LogicalRuleConditionsCard(
+    rules: List<T>,
+    stableId: (T) -> Any,
+    animationLabel: String,
+    isEnabled: (T) -> Boolean,
+    isLogical: (T) -> Boolean,
+    remarks: (T) -> String,
+    summary: @Composable (T) -> String,
     onAdd: () -> Unit,
-    onEdit: (SingBoxDnsRuleState) -> Unit,
-    onEnabledChange: (SingBoxDnsRuleState, Boolean) -> Unit,
-    onDelete: (SingBoxDnsRuleState) -> Unit,
+    onEdit: (T) -> Unit,
+    onEnabledChange: (T, Boolean) -> Unit,
+    onDelete: (T) -> Unit,
+    structureError: (List<T>) -> Int? = { null },
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -93,9 +97,9 @@ internal fun DnsLogicalChildrenCard(
                 targetState = rules,
                 transitionSpec = AsteriskMotion.fadeThrough(listMotion),
                 contentKey = { visibleRules ->
-                    ruleEditorAnimatedListContentKey(visibleRules, SingBoxDnsRuleState::id)
+                    ruleEditorAnimatedListContentKey(visibleRules, stableId)
                 },
-                label = "dns-logical-conditions",
+                label = animationLabel,
             ) { visibleRules ->
                 if (visibleRules.isEmpty()) {
                     Text(
@@ -106,15 +110,7 @@ internal fun DnsLogicalChildrenCard(
                     )
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        val structureError = when {
-                            visibleRules.none(SingBoxDnsRuleState::enabled) ->
-                                R.string.settings_dns_logical_enabled_condition_required
-                            visibleRules.any { child ->
-                                !child.hasValidDnsRuleStructure(nested = true)
-                            } -> R.string.settings_dns_logical_invalid_condition
-                            else -> null
-                        }
-                        structureError?.let { message ->
+                        structureError(visibleRules)?.let { message ->
                             Text(
                                 text = stringResource(message),
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
@@ -123,16 +119,14 @@ internal fun DnsLogicalChildrenCard(
                             )
                         }
                         visibleRules.forEachIndexed { index, child ->
-                            DnsLogicalChildCard(
-                                rule = child,
-                                fallbackName = stringResource(
-                                    R.string.routing_condition_number,
-                                    index + 1,
-                                ),
+                            LogicalRuleConditionCard(
+                                title = remarks(child).takeIf(String::isNotBlank)
+                                    ?: stringResource(R.string.routing_condition_number, index + 1),
+                                summary = summary(child),
+                                enabled = isEnabled(child),
+                                logical = isLogical(child),
                                 onEdit = { onEdit(child) },
-                                onEnabledChange = { enabled ->
-                                    onEnabledChange(child, enabled)
-                                },
+                                onEnabledChange = { enabled -> onEnabledChange(child, enabled) },
                                 onDelete = { onDelete(child) },
                             )
                         }
@@ -144,9 +138,11 @@ internal fun DnsLogicalChildrenCard(
 }
 
 @Composable
-private fun DnsLogicalChildCard(
-    rule: SingBoxDnsRuleState,
-    fallbackName: String,
+private fun LogicalRuleConditionCard(
+    title: String,
+    summary: String,
+    enabled: Boolean,
+    logical: Boolean,
     onEdit: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
     onDelete: () -> Unit,
@@ -154,7 +150,7 @@ private fun DnsLogicalChildCard(
     var menuExpanded by remember { mutableStateOf(false) }
     AsteriskExpressiveCard(
         onClick = onEdit,
-        modifier = Modifier.fillMaxWidth().alpha(if (rule.enabled) 1f else 0.68f),
+        modifier = Modifier.fillMaxWidth().alpha(if (enabled) 1f else 0.68f),
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Row(
@@ -162,11 +158,7 @@ private fun DnsLogicalChildCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                imageVector = if (rule.type == SingBoxDnsRuleTypeLogical) {
-                    Icons.Rounded.AccountTree
-                } else {
-                    Icons.Rounded.FilterAlt
-                },
+                imageVector = if (logical) Icons.Rounded.AccountTree else Icons.Rounded.FilterAlt,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
             )
@@ -175,13 +167,13 @@ private fun DnsLogicalChildCard(
                 verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 Text(
-                    text = rule.remarks.takeIf(String::isNotBlank) ?: fallbackName,
+                    text = title,
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = dnsRuleMatchSummary(rule),
+                    text = summary,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -189,61 +181,20 @@ private fun DnsLogicalChildCard(
                 )
             }
             Switch(
-                checked = rule.enabled,
+                checked = enabled,
                 onCheckedChange = onEnabledChange,
             )
             Box {
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(Icons.Rounded.MoreVert, stringResource(R.string.common_more))
                 }
-                DropdownMenu(
+                EditDeleteDropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.common_edit)) },
-                        leadingIcon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
-                        onClick = {
-                            menuExpanded = false
-                            onEdit()
-                        },
-                    )
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.common_delete)) },
-                        leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null) },
-                        onClick = {
-                            menuExpanded = false
-                            onDelete()
-                        },
-                    )
-                }
+                    onEdit = onEdit,
+                    onDelete = onDelete,
+                )
             }
         }
-    }
-}
-
-@Composable
-internal fun dnsRuleMatchSummary(rule: SingBoxDnsRuleState): String {
-    if (rule.type == SingBoxDnsRuleTypeLogical) {
-        val modeLabel = stringResource(
-            if (rule.logicalMode == SingBoxDnsRuleLogicalModeOr) {
-                R.string.routing_logical_mode_or_short
-            } else {
-                R.string.routing_logical_mode_and_short
-            },
-        )
-        val conditionCount = pluralStringResource(
-            R.plurals.routing_condition_count,
-            rule.logicalRules.size,
-            rule.logicalRules.size,
-        )
-        return stringResource(R.string.routing_logical_summary, modeLabel, conditionCount)
-    }
-    val matcherCount = rule.dnsMatcherCount()
-    return if (matcherCount == 0) {
-        stringResource(R.string.settings_dns_rule_match_all)
-    } else {
-        pluralStringResource(R.plurals.routing_match_count, matcherCount, matcherCount)
     }
 }

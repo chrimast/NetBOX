@@ -1,12 +1,10 @@
 // Copyright 2026, AsteriskBOX contributors
 // SPDX-License-Identifier: GPL-3.0
 
-package features.settings.sheets
+package features.dns
 
-import features.dns.DnsConfigurationMatchEditor
 import engine.singbox.config.DnsConfigurationMatchFields
 import engine.singbox.config.DnsConfigurationServerTypes
-import app.hasValidDnsConfigurationMatchers
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
@@ -44,12 +42,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import app.ManagedOutboundChoice
 import app.LocalAppStateStore
 import app.collectAppState
@@ -77,15 +73,17 @@ import engine.singbox.isNonNegativeSingBoxDuration
 import engine.singbox.isSingBoxDnsRCode
 import engine.singbox.isSingBoxUnsigned32
 import engine.singbox.singBoxRuleMatcherValueError
-import features.dns.DnsMatchResponseChoice
-import features.dns.DnsRuleMatcherGroups
-import features.dns.dnsPendingMatchersBlockSave
-import features.dns.nextLogicalDnsRuleId
-import features.dns.withDnsRuleMatchValues
 import features.settings.DnsSettingsDraft
-import features.settings.withDnsServerTagReplacement
+import features.settings.sheets.SettingsModalBottomSheet
+import features.settings.sheets.SettingsSheetContent
+import features.settings.sheets.SettingsSheetSection
+import features.settings.sheets.SettingsTextField
+import features.settings.sheets.SwitchPreference
+import features.settings.sheets.WindowDropdownPreference
 import app.R
+import ui.components.AsteriskCancelButton
 import ui.components.AsteriskInfoChip
+import ui.components.AsteriskSaveButton
 import ui.components.EditorPageScaffold
 import ui.components.ReferenceSelectionCard
 import ui.components.RuleEditorChipGroupCard
@@ -216,17 +214,13 @@ internal fun DnsSettingsBottomSheet(
         show = show,
         title = stringResource(R.string.settings_dns),
         startAction = {
-            TextButton(
-                text = stringResource(R.string.common_cancel),
-                icon = Icons.Rounded.Close,
+            AsteriskCancelButton(
                 enabled = !saving,
                 onClick = onDismissRequest,
             )
         },
         endAction = {
-            TextButton(
-                text = stringResource(R.string.common_save),
-                icon = Icons.Rounded.Save,
+            AsteriskSaveButton(
                 enabled = canSave && !saving,
                 onClick = { onSave(draft.sanitized()) },
             )
@@ -235,7 +229,7 @@ internal fun DnsSettingsBottomSheet(
     ) {
         key(show) {
             SettingsSheetContent {
-                DnsSheetSection(title = stringResource(R.string.settings_dns_section_basic)) {
+                SettingsSheetSection(title = stringResource(R.string.settings_dns_section_basic)) {
                     SwitchPreference(
                         title = stringResource(R.string.settings_vpn_local_dns),
                         icon = Icons.Rounded.Dns,
@@ -396,7 +390,7 @@ internal fun DnsSettingsBottomSheet(
                     )
                 }
 
-                DnsSheetSection(title = stringResource(R.string.settings_dns_section_servers)) {
+                SettingsSheetSection(title = stringResource(R.string.settings_dns_section_servers)) {
                     DnsObjectList(
                         count = draft.dnsServers.size,
                         emptyText = stringResource(R.string.settings_dns_servers_empty),
@@ -614,16 +608,12 @@ private fun DnsServerEditorSheet(
             if (editor.index == null) R.string.settings_dns_add_server else R.string.settings_dns_edit_server,
         ),
         startAction = {
-            TextButton(
-                text = stringResource(R.string.common_cancel),
-                icon = Icons.Rounded.Close,
+            AsteriskCancelButton(
                 onClick = onDismissRequest,
             )
         },
         endAction = {
-            TextButton(
-                text = stringResource(R.string.common_save),
-                icon = Icons.Rounded.Save,
+            AsteriskSaveButton(
                 enabled = canSave,
                 onClick = { onSave(server.sanitized()) },
             )
@@ -1828,26 +1818,6 @@ private fun DnsRecordListEditor(
         emptyText = stringResource(R.string.settings_dns_list_empty),
         horizontalPadding = 0.dp,
     )
-}
-
-@Composable
-private fun DnsSheetSection(
-    title: String,
-    content: @Composable () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth(),
-    ) {
-        Text(
-            text = title,
-            color = MaterialTheme.colorScheme.primary,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-        content()
-    }
 }
 
 @Composable

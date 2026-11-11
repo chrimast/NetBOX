@@ -11,14 +11,14 @@ import org.gradle.api.tasks.TaskAction
 object ProjectConfig {
     const val JVM_VERSION = 26
     const val PROJECT_NAME = "NetBOX"
-    const val VERSION_NAME = "1.1.25-netbox.1"
-    const val VERSION_CODE = 1012501
+    const val VERSION_NAME = "1.1.27"
+    const val VERSION_CODE = 1012701
     const val PACKAGE_NAME = "org.asterisk.zcc.abox"
     const val ASTERISKD_VERSION = "v2.3.0"
     const val BPF2SOCKS_VERSION = "v1.2.2"
     const val BPF_MATCHER_VERSION = "v1.0.2"
     const val ENHANCE_VERSION = "v1.0.8"
-    const val ANDROID_LIB_BOX_LITE_VERSION = "v1.15.0-alpha.13-reF1nd-android.1"
+    const val ANDROID_LIB_BOX_LITE_VERSION = "v1.15.0-alpha.13-reF1nd-android.2"
     const val HEV_SOCKS5_TUNNEL_VERSION = "2.19.3"
     const val TARGET_SDK = 37
     const val TARGET_SDK_MINOR = 2

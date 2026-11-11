@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import features.settings.SettingsSectionCard
 import features.settings.SettingsSwitchRow
-import ui.components.IconAccent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,6 +48,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ui.clipboard.setPlainText
 import ui.components.AsteriskActionButton
+import ui.components.AsteriskSaveButton
 import ui.components.AsteriskScaffold
 import ui.components.AsteriskTopAppBar
 import ui.layout.pageContentPaddingWithCutout
@@ -95,7 +95,7 @@ internal fun SingBoxOverrideScriptPage(padding: PaddingValues) {
                                 try {
                                     result = withContext(Dispatchers.Default) {
                                         debugSingBoxConfigOverride(
-                                            SingBoxConfigCompiler.generate(context, snapshot), script,
+                                            SingBoxConfigCompiler.generate(context, snapshot), script, snapshot.pluginProtocols,
                                         )
                                     }
                                 } catch (cancelled: CancellationException) {
@@ -108,9 +108,7 @@ internal fun SingBoxOverrideScriptPage(padding: PaddingValues) {
                             }
                         },
                     )
-                    AsteriskActionButton(
-                        text = stringResource(R.string.common_save),
-                        icon = Icons.Rounded.Save,
+                    AsteriskSaveButton(
                         onClick = {
                             val script = editorState.snapshotText()
                             updateAppState { state ->
@@ -140,7 +138,6 @@ internal fun SingBoxOverrideScriptPage(padding: PaddingValues) {
                         icon = Icons.Rounded.Code,
                         checked = scriptEnabled,
                         onCheckedChange = { scriptEnabled = it },
-                        accent = IconAccent.MaskPurple,
                     )
                 }
             }
