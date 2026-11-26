@@ -96,6 +96,7 @@ internal fun AsteriskScaffold(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val backdrop = rememberHazeState()
+    ui.DialogSystemBarAppearance()
     val style = chromeStyle()
     Scaffold(
         modifier = modifier,
